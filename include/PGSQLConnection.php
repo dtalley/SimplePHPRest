@@ -75,6 +75,9 @@
 
     //Submit a string of SQL to the server
     public function query( $sql ) {
+      if( $this->_connection === NULL ) {
+        $this->connect();
+      }
       if( $this->_connection !== NULL ) {
         return pg_query( $this->_connection, $sql );
       }

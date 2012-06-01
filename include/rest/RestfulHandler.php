@@ -8,8 +8,8 @@
     protected $_secure;
     protected $_internal;
     protected $_config;
-    protected $_db;
-
+    
+    private $_dbs;
     private $_code = 200;
 
     private $_inputSource;
@@ -21,7 +21,7 @@
       $secure, 
       $internal,
       DataTree &$config, 
-      PGSQLConnection &$db,
+      array &$dbs,
       array &$input = NULL
     ) {
       global $_GET, $_POST, $_REQUEST;
@@ -38,7 +38,7 @@
       $this->_secure = $secure;
       $this->_internal = $internal;
       $this->_config = $config;
-      $this->_db = $db;
+      $this->_dbs = $dbs;
 
       if( $input !== NULL ) {
         $this->_inputSource = $input;
@@ -61,6 +61,15 @@
     }
 
     abstract public function respond( DataTree $response );
+
+    protected function getDatabase( $type ) {
+      foreach( $this->_dbs as $db ) {
+        if( get_class( $db ) == $type ) {
+          return $db;
+        }
+      }
+      return false;
+    }
 
     public function getCode() {
       return $this->_code;
@@ -85,12 +94,12 @@
       return $default;
     }
 
-    protected function setCookie( $id, $value ) {
+    protected function setCookie( $id, $value, $secure = false ) {
       $key = $this->_config->get( "cookies/prefix" ) . $id;
       $domain = $this->_config->get( "cookies/domain" );
       $path = $this->_config->get( "site/path" );
       $expiration = time() + $this->_config->get( "cookies/expiration" );
-      setcookie( $key, $value, $expiration, $path, $domain, false );
+      setcookie( $key, $value, $expiration, $path, $domain, $secure );
     }
 
     protected function refreshCookie( $id ) {

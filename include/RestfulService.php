@@ -9,7 +9,7 @@
   class RestfulService {
     
     private $_config = NULL;
-    private $_db = NULL;
+    private $_dbs = array();
 
     private $_pseudo = false;
 
@@ -24,7 +24,8 @@
       10001 => "Database connection error",
       10002 => "Unsupported URI requested",
       10003 => "Client error",
-      10004 => "System error"
+      10004 => "System error",
+      10005 => "Required database not found"
     );
 
     private $_codes = array(
@@ -57,16 +58,30 @@
     public function __construct() {
       $this->_register = new DataTree();
       $this->_data = new DataTree();
-      $this->_data->start( "response" );
     }
 
     public function enablePseudo() {
       $this->_pseudo = true;
     }
 
-    public function init( $config, $db ) {
+    public function init( $config ) {
       $this->_config = $config;
-      $this->_db = $db;
+      $total = func_num_args();
+      $allowed = array(
+        "PGSQLConnection",
+        "Rediska"
+      );
+      for( $i = 1; $i < $total; $i++ ) {
+        if( 
+          is_object( func_get_arg( $i ) ) &&
+          in_array( 
+            get_class( func_get_arg( $i ) ), 
+            $allowed 
+          ) 
+        ) {
+          $this->_dbs[] = func_get_arg( $i );
+        }
+      }
     }
 
     public function respond( 
@@ -107,14 +122,23 @@
           $secure, 
           $internal,
           $this->_config, 
-          $this->_db,
+          $this->_dbs,
           $input
         );
+        if( $bank !== NULL ) {
+          $use_bank = $bank;
+        } else {
+          $use_bank = new DataTree();
+        }
         $this->_handler->respond( 
-          $bank !== NULL ? 
-          $bank : 
-          $this->_data->get( "response" )
+          $use_bank
         );
+        if( 
+          $bank === NULL &&
+          !$use_bank->isEmpty()
+        ) {
+          $this->_data->store( "response", $use_bank );
+        }
         if( $this->_handler->getCode() > $this->_code ) {
           $this->_code = $this->_handler->getCode();
         }
@@ -149,7 +173,7 @@
     public function error( 
       $code, $level = 0, $message = "" 
     ) {
-      $error = $this->_data->start( "errors/error" );
+      $error = $this->_data->start( "errors", true );
       $error->store( "code", $code );
       $error->store( 
         "description", $this->_errorCodes[$code] 

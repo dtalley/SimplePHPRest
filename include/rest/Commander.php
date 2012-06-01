@@ -7,20 +7,25 @@
   require_once INCLUDE_DIR . "rest/RestfulHandler.php";
 
   class Commander extends RestfulHandler {
+
+    private $_pgsql = NULL;
     
     public function respond( DataTree $response ) {
-      $directories = explode( $this->_uri );
+      if( ( $this->_pgsql = $this->getDatabase( "PGSQLConnection" ) ) === false ) {
+        $this->_service->error( 10005, 1, "A PGSQLConnection object must be present" );
+      }
+      $directories = explode( "/", $this->_uri );
       $root = array_shift( $directories );
       if( $root == "commander" ) {
-        $this->commander( $response, $directories );
+        $this->handleCommander( $response, $directories );
       } else if( $root == "commanders" ) {
-        $this->commanders( $response, $directories );
+        $this->handleCommanders( $response, $directories );
       } else {
         $this->_service->error( 10002 );
       }
     }
 
-    private function commander( DataTree $response, array $directories ) {
+    private function handleCommander( DataTree $response, array $directories ) {
       $commander = isset( $directories[0] ) ? $directories[0] : NULL;
       if( $this->_method == "head" ) {
         $this->checkCommander( $response, $commander );
@@ -37,7 +42,7 @@
       }
     }
 
-    private function commanders( DataTree $response, array $directories ) {
+    private function handleCommanders( DataTree $response, array $directories ) {
       if( $this->_method == "get" ) {
         $this->listCommanders( $response );
       } else {
@@ -50,8 +55,8 @@
       $this->_service->respond( 
         "auth/verify", $this->_method, true, true, $authData 
       );
-      if( $authData->get( "authorized" ) ) {
-        return $authData->get( "id" );
+      if( $authData->get( "auth/authenticated" ) ) {
+        return $authData->get( "auth/id" );
       }
       return 0;
     }
@@ -65,7 +70,7 @@
         $this->_service->error( 10003, 1, "No name provided" );
         return;
       }
-      $query = $this->_db->start();
+      $query = $this->_pgsql->start();
       $commanders = $query->open( TABLE_COMMANDERS );
       $commanders->where( "cdr_name", $query->sanitize( $name ) );
       if( $query->select() ) {
@@ -79,7 +84,16 @@
       $user = $this->checkAuthentication();
       if( !$user ) {
         $this->setCode( 400 );
-        $this->_service->error( 10003, 2, "No authenticated user found" );
+        $this->_service->error( 10003, 1, "No authenticated user found" );
+        return;
+      }
+      $query = $this->_pgsql->start();
+      $commanders = $query->open( TABLE_COMMANDERS );
+      $commanders->select( "cdr_id" );
+      $commanders->where( "usr_id", $user );
+      if( $query->select() ) {
+        $this->setCode( 400 );
+        $this->_service->error( 10003, 2, "User already has a commander" );
         return;
       }
       $name = $this->input( "name", false );
@@ -93,26 +107,18 @@
         $this->_service->error( 10003, 4, "Invalid commander name provided" );
         return;
       }
-      $query = new PGSQLQuery( $this->_db );
-      $commanders->open( TABLE_COMMANDERS, "c" );
-      $commanders->where( "name", $query->sanitize( $name ) );
+      $query = $this->_pgsql->start();
+      $commanders = $query->open( TABLE_COMMANDERS );
+      $commanders->select( "cdr_id" );
+      $commanders->where( "cdr_name", $query->sanitize( $name ) );
       if( $query->select() ) {
         $this->setCode( 400 );
         $this->_service->error( 10003, 5, "Commander name already exists" );
         return;
       }
-      $userData = new DataTree();
-      $this->_service->respond(
-        "user", "get", true, true, $userData, array( "id" => $user )
-      );
-      if( $userData->get( "user" ) === NULL ) {
-        $this->setCode( 400 );
-        $this->_service->error( 10003, 6, "Invalid user provided" );
-        return;
-      }
 
       $time = time();
-      $query = new PGSQLQuery( $this->_db );
+      $query = $this->_pgsql->start();
       
       $commanders = $query->open( TABLE_COMMANDERS );      
       $commanders->set( "cdr_name", $query->sanitize( $name ) );
@@ -133,7 +139,7 @@
       if( $name === false ) {
         $name = $this->input( "name", false );
       }
-      $query = $this->_db->start();
+      $query = $this->_pgsql->start();
       $commanders = $query->open( TABLE_COMMANDERS );
       $commanders->where( "cdr_name", $query->sanitize( $name ) );
       $commanderData = $query->select();
@@ -167,7 +173,7 @@
         $name = $this->input( "name", false );
       }
       $id = $this->input( "id", false );
-      $query = $this->_db->start();
+      $query = $this->_pgsql->start();
       $commanders = $query->open( TABLE_COMMANDERS );
       if( $name ) {
         $commanders->where( "cdr_name", $query->sanitize( $name ) );
@@ -191,7 +197,7 @@
         $this->_service->error( 10003, 4, "Permission denied to delete commander" );
         return;
       }
-      $query = $this->_db->start();
+      $query = $this->_pgsql->start();
       $commanders = $query->open( TABLE_COMMANDERS );
       $commanders->where( "cdr_id", $commanderData['cdr_id'] );
       if( !$query->delete() ) {
@@ -214,7 +220,7 @@
         $this->_service->error( 10003, 1, "No name or ID provided" );
         return;
       }
-      $query = $this->_db->start();
+      $query = $this->_pgsql->start();
       $commanders = $query->open( TABLE_COMMANDERS );
       if( $name ) {
         $commanders->where( "cdr_name", $query->sanitize( $name ) );

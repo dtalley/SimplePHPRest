@@ -5,10 +5,16 @@
   }
   require_once INCLUDE_DIR . "DataTree.php";
   require_once INCLUDE_DIR . "rest/RestfulHandler.php";
+  require_once INCLUDE_DIR . "PasswordHash.php";
 
   class User extends RestfulHandler {
+
+    private $_pgsql = NULL;
     
     public function respond( DataTree $response ) {
+      if( ( $this->_pgsql = $this->getDatabase( "PGSQLConnection" ) ) === false ) {
+        $this->_service->error( 10005, 1, "A PGSQLConnection object must be present" );
+      }
       $directories = explode( "/", $this->_uri );
       $root = array_shift( $directories );
       if( $root == "user" ) {
@@ -53,7 +59,7 @@
        * is either the name of a valid user type, or
        * the ID of a valid user type.
        */
-      $query = new PGSQLQuery( $this->_db );
+      $query = $this->_pgsql->start();
       $types = $query->open( TABLE_USER_TYPES );
       $types->select("utp_id");
       if( preg_match( "/[^0-9]/", $type ) ) {
@@ -68,9 +74,10 @@
         return;
       }
       $key = $this->input( "key", false );
-      if( $key === false ) {
+      $email = $this->input( "email", false );
+      if( !$key && !$email ) {
         $this->setCode( 400 );
-        $this->_service->error( 10003, 2, "No user key provided" );
+        $this->_service->error( 10003, 2, "No user key or e-mail provided" );
         return;
       }
 
@@ -78,10 +85,15 @@
        * Check if the user key and type already exists in the
        * database, and if so, indicate as such.
        */
-      $query = new PGSQLQuery( $this->_db );
+      $query = $this->_pgsql->start();
       $users = $query->open( TABLE_USERS );
       $users->select("*");
-      $users->where( "usr_key", $query->sanitize( $key ), "AND" );
+      if( $key ) {
+        $users->where( "usr_key", $query->sanitize( $key ), "AND" );
+      }
+      if( $email ) {
+        $users->where( "usr_email", $query->sanitize( $email ), "AND" );
+      }
       $users->where( "utp_id", $typeData['utp_id'] );
       if( $query->select() ) {
         $this->setCode( 200 );
@@ -103,7 +115,7 @@
        * is either the name of a valid user type, or
        * the ID of a valid user type.
        */
-      $query = new PGSQLQuery( $this->_db );
+      $query = $this->_pgsql->start();
       $types = $query->open( TABLE_USER_TYPES );
       $types->select("*");
       if( preg_match( "/[^0-9]/", $type ) ) {
@@ -135,22 +147,7 @@
           return;
         }
         $hasher = new PasswordHash();
-        $password = $hasher->hash( $password, false );
-      }
-
-      /**
-       * Check if the user key and type already exists in the
-       * database, and if so, indicate as such.
-       */
-      $query = new PGSQLQuery( $this->_db );
-      $users = $query->open( TABLE_USERS );
-      $users->select("*");
-      $users->where( "usr_key", $query->sanitize( $key ), "AND" );
-      $users->where( "utp_id", $typeData['utp_id'] );
-      if( $query->select() ) {
-        $this->setCode( 409 );
-        $this->_service->error( 10003, 4, "User already exists" );
-        return;
+        $password = $hasher->HashPassword( $password );
       }
 
       $email = $this->input( "email", false );
@@ -171,8 +168,27 @@
         $this->setCode( 400 );
         $this->_service->error( 10003, 6, "Invalid e-mail provided" );
       }
+
+      /**
+       * Check if the user key and type already exists in the
+       * database, and if so, indicate as such.
+       */
+      $query = $this->_pgsql->start();
+      $users = $query->open( TABLE_USERS );
+      $users->select("*");
+      if( $typeData['utp_name'] == "default" ) {
+        $users->where( "usr_email", $query->sanitize( $email ), "AND" );
+      } else {
+        $users->where( "usr_key", $query->sanitize( $key ), "AND" );
+      }
+      $users->where( "utp_id", $typeData['utp_id'] );
+      if( $query->select() ) {
+        $this->setCode( 409 );
+        $this->_service->error( 10003, 4, "User already exists" );
+        return;
+      }
       
-      $query = new PGSQLQuery( $this->_db );
+      $query = $this->_pgsql->start();
 
       $users = $query->open( TABLE_USERS );     
       if( $key ) { 
@@ -183,7 +199,7 @@
       $users->set( "usr_created", $time );
       $users->set( "usr_active", $time );
       if( $password !== NULL ) {
-        $users->set( "usr_code", $password );
+        $users->set( "usr_code", $query->sanitize( $password ) );
       }
       if( ( $id = $query->insert() ) === false ) {
         $this->setCode( 500 );
@@ -204,7 +220,25 @@
     }
 
     private function getUser( $response ) {
-      
+      $id = $this->input( "id", false );
+      if( !$id ) {
+        $this->setCode( 400 );
+        $this->_service->error( 10003, 1, "No ID provided" );
+        return;
+      }
+      $query = $this->_pgsql->start();
+      $users = $query->open( TABLE_USERS );
+      $users->where( "usr_id", $query->sanitize( $id ) );
+      $userData = $query->select();
+      if( !$userData ) {
+        $this->setCode( 404 );
+        $this->_service->error( 10003, 2, "User not found" );
+        return;
+      }
+
+      $user = $response->start( "user" );
+      $user->store( "id", $userData['usr_id'] );
+      $user->store( "created", $userData['usr_created'] );
     }
 
     private function listUsers( $response ) {

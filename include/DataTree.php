@@ -36,6 +36,13 @@ class DataTree {
     $this->_level = $level;
   }
 
+  public function isEmpty() {
+    return (
+      count( $this->_elements ) + 
+      count( $this->_values )
+    ) == 0;
+  }
+
   /**
    * Create a valid path through this
    * object.  If the path doesn't
@@ -44,8 +51,11 @@ class DataTree {
    * the tree at that point and create a new
    * path.
    * @param $path The path string to create
+   * @param $forceArray Force the current element
+   * to start as an array, rather than waiting for
+   * a subsequent element to be added
    */
-  public function start( $path ) {
+  public function start( $path, $forceArray = false ) {
     //If $path is not a string, somebody screwed up
     if( !is_string( $path ) ) {
       return NULL;
@@ -59,7 +69,10 @@ class DataTree {
       return $this->_parent->start( $path );
     }
     //If the requested element doesn't exist, create it
-    if( !isset( $this->_elements[$name] ) ) {
+    if( 
+      !isset( $this->_elements[$name] ) && 
+      $forceArray
+    ) {
       $this->_elements[$name] = array();
     }
     /**
@@ -86,17 +99,58 @@ class DataTree {
         strlen( $path ) == 0 && 
         $total_filters == 0 
       ) ||
-      count( $this->_elements[$name] ) == 0
+      !$this->initialized( $this->_elements[$name] )
     ) {
-      $this->_elements[$name][] = new DataTree( 
-        $this, 
-        $this->_level+1
-      ); 
+      if( 
+        isset( $this->_elements[$name] ) && 
+        !is_array( $this->_elements[$name] ) 
+      ) {
+        $this->_elements[$name] = array(
+          $this->_elements[$name]
+        );
+      }
+      if( 
+        isset( $this->_elements[$name] ) && 
+        is_array( $this->_elements[$name] ) 
+      ) {
+        $this->_elements[$name][] = new DataTree( 
+          $this, 
+          $this->_level+1
+        );  
+      } else {
+        $this->_elements[$name] = new DataTree( 
+          $this, 
+          $this->_level+1
+        );  
+      }
     }
     $elements = $this->elements( $name, $filters );
     $total = count( $elements );
     return $elements[$total-1]->start( $path );
   } //end start
+
+  /**
+   * Check if a provided node is a valid node, in
+   * other words, it's an initialized array with
+   * at least one element in it, or it is a
+   * DataTree object itself.
+   */
+  private function initialized( $element ) {
+    if( !$element ) {
+      return false;
+    } else if( 
+      is_array( $element ) && 
+      count( $element ) == 0 
+    ) {
+      return false;
+    } else if( 
+      is_object( $element ) &&
+      get_class( $element ) != get_class( $this ) 
+    ) {
+      return false;
+    }
+    return true;
+  }
 
   /**
    * Store a value by name within this tree.
@@ -115,10 +169,19 @@ class DataTree {
       is_object( $value ) && 
       get_class( $value ) == get_class( $this )
     ) {
+      if( 
+        isset( $this->_elements[$name] ) && 
+        !is_array( $this->_elements[$name] ) 
+      ) {
+        $this->_elements[$name] = array(
+          $this->_elements[$name]
+        );
+      }
       if( !isset( $this->_elements[$name] ) ) {
-        $this->_elements[$name] = array();
-      } 
-      $this->_elements[$name][] = $value;
+        $this->_elements[$name] = $value;
+      } else {
+        $this->_elements[$name][] = $value;
+      }
       $value->setParent( $this );
       $value->setLevel( $this->_level+1 );
     } else {
@@ -153,15 +216,26 @@ class DataTree {
       foreach( 
         $this->_elements as $name => $elements 
       ) {
-        $total = count( $this->_elements[$name] );
+        $total = 0;
+        if( is_array( $this->_elements[$name] ) ) {
+          $total = count( $this->_elements[$name] );
+        } else if( is_object( $this->_elements[$name] ) ) {
+          $total = 1;
+        }
         for( $i = 0; $i < $total; $i++ ) {
-          $element = $this->_elements[$name][$i];
+          if( is_array( $this->_elements[$name] ) ) {
+            $element = $this->_elements[$name][$i];
+          } else {
+            $element = $this->_elements[$name];
+          }
           if( $element == $node ) {
-            array_splice( 
-              $this->_elements[$name], 
-              $i, 
-              1 
-            );
+            if( is_array( $this->_elements[$name] ) ) {
+              array_splice( 
+                $this->_elements[$name], 
+                $i, 
+                1 
+              );
+            }
             /**
              * If the elements array that the
              * provided object belongs to is now
@@ -187,16 +261,24 @@ class DataTree {
         if( isset( $this->_elements[$name] ) ) {
           $elements = $this->elements( $name, $filters );
           foreach( $elements as $element ) {
-            array_splice( 
-              $this->_elements[$name], 
-              array_search( 
-                $element, $this->_elements[$name] 
-              ), 
-              1 
-            );
-          }
-          if( count( $this->_elements[$name] ) == 0 ) {
-            unset( $this->_elements[$name] );
+            if( is_array( $this->_elements[$name] ) ) {
+              array_splice( 
+                $this->_elements[$name], 
+                array_search( 
+                  $element, $this->_elements[$name] 
+                ), 
+                1 
+              );
+              if( 
+                count( $this->_elements[$name] ) == 0 
+              ) {
+                unset( $this->_elements[$name] );
+              }
+            } else if( 
+              $element == $this->_elements[$name] 
+            ) {
+              unset( $this->_elements[$name] );
+            }
           }
         }
         if( isset( $this->_values[$name] ) ) {
@@ -307,22 +389,27 @@ class DataTree {
     //Loop through and insert each element
     foreach( $this->_elements as $name => $tree ) {
       if( !isset( $return[$name] ) ) {
-        $return[$name] = NULL;
+        if( is_array( $this->_elements[$name] ) ) {
+          $return[$name] = array();
+        }
       }
-      $total = count( $this->_elements[$name] );
-      /**
-       * If there's only one element for
-       * the current name, don't return it
-       * as an array.
-       */
+
+      $total = 0;
+      if( is_array( $this->_elements[$name] ) ) {
+        $total = count( $this->_elements[$name] );
+      } else if( is_object( $this->_elements[$name] ) ) {
+        $total = 1;
+      }
+
       for( $i = 0; $i < $total; $i++ ) {
-        $element = $this->_elements[$name][$i];
-        if( $total == 1 ) {
-          $return[$name] = (
+        if( is_array( $this->_elements[$name] ) ) {
+          $element = $this->_elements[$name][$i];
+          $return[$name][] = (
             $element->save_json( false )
           );
         } else {
-          $return[$name][] = (
+          $element = $this->_elements[$name];
+          $return[$name] = (
             $element->save_json( false )
           );
         }
@@ -356,9 +443,18 @@ class DataTree {
     $return = "";
     //Loop through and insert each element
     foreach( $this->_elements as $name => $tree ) {
-      $total = count( $this->_elements[$name] );
+      $total = 0;
+      if( is_array( $this->_elements[$name] ) ) {
+        $total = count( $this->_elements[$name] );
+      } else if( is_object( $this->_elements[$name] ) ) {
+        $total = 1;
+      }
       for( $i = 0; $i < $total; $i++ ) {
-        $element = $this->_elements[$name][$i];
+        if( is_array( $this->_elements[$name] ) ) {
+          $element = $this->_elements[$name][$i];
+        } else {
+          $element = $this->_elements[$name];
+        }
         $return .= "<" . $name . ">";
         $return .= $element->save_xml();
         $return .= "</" . $name . ">";
@@ -567,7 +663,12 @@ class DataTree {
     if( !isset( $this->_elements[$name] ) ) {
       return array();
     }
-    $total = count( $this->_elements[$name] );
+    $total = 0;
+    if( is_array( $this->_elements[$name] ) ) {
+      $total = count( $this->_elements[$name] );
+    } else if( is_object( $this->_elements[$name] ) ) {
+      $total = 1;
+    }
     if( count( $filters ) > 0 ) {
       if( count( $filters ) == 1 ) {
         //If the filter is just a number, it's an index
@@ -579,11 +680,21 @@ class DataTree {
         ) {
           $index = (int)$filters[0];
           if( 
-            isset( $this->_elements[$name][$index] ) 
+            (
+              is_array( $this->_elements[$name] ) &&
+              isset( $this->_elements[$name][$index] ) 
+            ) ||
+            $index == 0
           ) {
-            return array( 
-              $this->_elements[$name][$index] 
-            );
+            if( is_array( $this->_elements[$name] ) ) {
+              return array( 
+                $this->_elements[$name][$index] 
+              );
+            } else {
+              return array(
+                $this->_elements[$name]
+              );
+            }
           }
           return NULL;
         }
@@ -591,14 +702,21 @@ class DataTree {
       $return = array();
       //Loop through and check all the filters
       for( $i = 0; $i < $total; $i++ ) {
-        $element = $this->_elements[$name][$i];
+        if( is_array( $this->_elements[$name] ) ) {
+          $element = $this->_elements[$name][$i]; 
+        } else {
+          $element = $this->_elements[$name];
+        }
         if( $element->match( $filters ) ) {
           $return[] = $element;
         }
       }
       return $return;
     }
-    return $this->_elements[$name];
+    if( is_array( $this->_elements[$name] ) ) {
+      return $this->_elements[$name];
+    }
+    return array( $this->_elements[$name] );
   } //end elements
 
   /**

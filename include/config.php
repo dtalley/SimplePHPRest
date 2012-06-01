@@ -16,7 +16,7 @@
   $db = NULL;
 
   $cookies = $config->start( "cookies" );
-    $cookies->store( "domain", "boomtown.orionark.com" ):
+    $cookies->store( "domain", "boomtown.orionark.com" );
     $cookies->store( "prefix", "bmtn_" );
     $cookies->store( "expiration", ( 60 * 60 * 24 * 1 ) );
   $cookies = NULL;
