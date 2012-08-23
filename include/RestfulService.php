@@ -17,6 +17,8 @@
     private $_data = NULL;
 
     private $_code = 200;
+	
+	private $_method = NULL;
 
     private $_handler = NULL;
 
@@ -68,6 +70,7 @@
       $this->_config = $config;
       $total = func_num_args();
       $allowed = array(
+	    "MySQLConnection",
         "PGSQLConnection",
         "Rediska"
       );
@@ -81,6 +84,10 @@
         ) {
           $this->_dbs[] = func_get_arg( $i );
         }
+		else
+		{
+		  die( "Database class '" . get_class( func_get_arg($i) ) . "' not allowed" );
+		}
       }
     }
 
@@ -112,7 +119,8 @@
           $tree = $tree->get( "_int" );
         }
       }
-      if( ( $class = $tree->get( "class" ) ) !== NULL ) {
+      if ( ( $class = $tree-> get( "class" ) ) !== NULL ) {
+	    $this->_method = $method;
         require_once INCLUDE_DIR . "rest/" . $class . ".php";
         $this->_handler = new $class();
         $this->_handler->process( 

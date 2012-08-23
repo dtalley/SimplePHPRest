@@ -63,6 +63,10 @@
     abstract public function respond( DataTree $response );
 
     protected function getDatabase( $type ) {
+	  if ( $this->_dbs === NULL )
+	  {
+		return false;
+	  }
       foreach( $this->_dbs as $db ) {
         if( get_class( $db ) == $type ) {
           return $db;
@@ -78,6 +82,15 @@
     protected function setCode( $code ) {
       $this->_code = $code;
     }
+	
+	protected function assert( $key, $def, $code, $err, $level, $msg ) {
+	  $val = $this->input($key, $def);
+	  if ( $val === $def ) {
+	    $this->setCode($code);
+		$this->_service->error($err, $level, $msg);
+	  }
+	  return $val;
+	}
 
     protected function input( $id, $default ) {
       if( isset( $this->_inputSource[$id] ) ) {

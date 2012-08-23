@@ -5,12 +5,12 @@
   require_once INCLUDE_DIR . "tables.php";
   require_once INCLUDE_DIR . "DataTree.php";
   require_once INCLUDE_DIR . "config.php";
-  require_once INCLUDE_DIR . "PGSQLConnection.php";
+  require_once INCLUDE_DIR . "MySQLConnection.php";
   require_once INCLUDE_DIR . "RestfulService.php";
 
   $service = new RestfulService();
 
-  $db = new PGSQLConnection();
+  $db = new MySQLConnection();
   $db->setHost( $config->get( "db/host" ) );
   $db->setPort( $config->get( "db/port" ) );
   $db->setName( $config->get( "db/name" ) );
@@ -19,14 +19,9 @@
   $service->init( $config, $db );
   $db = NULL;
 
-  $service->register( "auth/*", "Authentication" );
-  $service->register( "user/*,users/*", "User" );
-  $service->register( "commander/*,commanders/*", "Commander" );
-  $service->register( "soldier/*,soldiers/*", "Unit" );
-  $service->register( "battle/*,battles/*", "Battle" );
-  $service->register( "squad/*,squads/*", "Squad" );
+  $service->register( "score/*,scores/*", "Score" );
 
-  $authorization = $_SERVER['HTTP_AUTHORIZATION'];
+  //$authorization = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : NULL;
   $request = $_SERVER['REQUEST_URI'];
   $split = explode( "?", $request );
   $uri = $split[0];

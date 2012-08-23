@@ -65,6 +65,7 @@ class DataTree {
       return $this;
     }
     $this->parse( $path, $name, $filters );
+	$total_filters = count($filters);
     if( $name == ".." ) {
       return $this->_parent->start( $path );
     }
