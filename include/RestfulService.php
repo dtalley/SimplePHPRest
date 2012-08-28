@@ -138,14 +138,18 @@
         } else {
           $use_bank = new DataTree();
         }
-        $this->_handler->respond( 
+        $override = $this->_handler->respond( 
           $use_bank
         );
         if( 
           $bank === NULL &&
           !$use_bank->isEmpty()
         ) {
-          $this->_data->store( "response", $use_bank );
+          if( $override === true ) {
+            $this->_data = $use_bank;
+          } else {
+            $this->_data->store( "response", $use_bank );
+          }
         }
         if( $this->_handler->getCode() > $this->_code ) {
           $this->_code = $this->_handler->getCode();

@@ -74,16 +74,28 @@
 
     //Retrieve an associative array from a resource
     public function assoc( $resource ) {
+      if( !is_resource($resource) )
+      {
+        return NULL;
+      }
       return mysqli_fetch_assoc( $resource );
     }
 
     //Free the memory a resource occupies
     public function free( $resource ) {
+      if( !is_resource($resource) )
+      {
+        return false;
+      }
       return mysqli_free_result( $resource );
     }
 
     //Get the total number of rows from a resource
     public function total( $resource ) {
+      if( !is_resource($resource) )
+      {
+        return 0;
+      }
       return mysqli_num_rows( $resource );
     }
 
