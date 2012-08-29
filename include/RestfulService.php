@@ -18,7 +18,7 @@
 
     private $_code = 200;
 	
-	private $_method = NULL;
+    private $_method = NULL;
 
     private $_handler = NULL;
 
@@ -70,9 +70,10 @@
       $this->_config = $config;
       $total = func_num_args();
       $allowed = array(
-	    "MySQLConnection",
+	      "MySQLConnection",
         "PGSQLConnection",
-        "Rediska"
+        "Rediska",
+        "Sag"
       );
       for( $i = 1; $i < $total; $i++ ) {
         if( 
@@ -84,10 +85,10 @@
         ) {
           $this->_dbs[] = func_get_arg( $i );
         }
-		else
-		{
-		  die( "Database class '" . get_class( func_get_arg($i) ) . "' not allowed" );
-		}
+    		else
+    		{
+    		  die( "Database class '" . get_class( func_get_arg($i) ) . "' not allowed" );
+    		}
       }
     }
 
