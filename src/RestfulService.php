@@ -3,8 +3,7 @@
   if( !DEFINED( "REST_DIR" ) ) {
     DEFINE( "REST_DIR", "include/rest" );
   }
-
-  require_once "OrionarkPHP/misc/DataTree.php";
+  
   require_once "SimplePHPRest/RestfulHandler.php";
 
   class RestfulService {
