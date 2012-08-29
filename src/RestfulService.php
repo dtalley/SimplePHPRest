@@ -1,10 +1,11 @@
 <?php
 
-  if( !defined( "INCLUDE_DIR" ) ) {
-    define( "INCLUDE_DIR", "" );
+  if( !DEFINED( "REST_DIR" ) ) {
+    DEFINE( "REST_DIR", "include/rest" );
   }
-  require_once INCLUDE_DIR . "DataTree.php";
-  require_once INCLUDE_DIR . "rest/RestfulHandler.php";
+
+  require_once "OrionarkPHP/misc/DataTree.php";
+  require_once "SimplePHPRest/RestfulHandler.php";
 
   class RestfulService {
     
@@ -122,7 +123,7 @@
       }
       if ( ( $class = $tree-> get( "class" ) ) !== NULL ) {
 	    $this->_method = $method;
-        require_once INCLUDE_DIR . "rest/" . $class . ".php";
+        require_once REST_DIR . "/" . $class . ".php";
         $this->_handler = new $class();
         $this->_handler->process( 
           $this, 
