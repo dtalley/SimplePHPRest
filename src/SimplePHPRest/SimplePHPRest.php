@@ -17,6 +17,11 @@
       $this->_service->init( $config, $db );
     }
 
+    public function addDatabase( $id, $db )
+    {
+      $this->_service->addDatabase( $id, $db );
+    }
+
     public function register( $uri, $handler ) {
       $this->_service->register( $uri, $handler );
     }
