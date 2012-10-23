@@ -1,11 +1,7 @@
 <?php
-  
-  if( !DEFINED( "REST_DIR" ) ) {
-    DEFINE( "REST_DIR", "include/rest" );
-  }
 
   require_once "OrionarkPHP/misc/DataTree.php";
-  require_once "RestfulService.php";
+  require_once "SimplePHPRest/RestfulService.php";
 
   class SimplePHPRest {
 
@@ -27,6 +23,10 @@
 
     public function respond() {
       global $_SERVER, $_REQUEST;
+
+      if( !DEFINED( "REST_DIR" ) ) {
+        DEFINE( "REST_DIR", "include/rest" );
+      }
 
       $request = $_SERVER['REQUEST_URI'];
       $split = explode( "?", $request );
