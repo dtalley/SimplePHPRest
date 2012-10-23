@@ -62,15 +62,15 @@
 
     abstract public function respond( DataTree $response );
 
-    protected function getDatabase( $type ) {
-	  if ( $this->_dbs === NULL )
-	  {
-		return false;
-	  }
-      foreach( $this->_dbs as $db ) {
-        if( get_class( $db ) == $type ) {
-          return $db;
-        }
+    protected function getDatabase( $id, $type ) {
+  	  if ( $this->_dbs === NULL )
+  	  {
+  		  return false;
+  	  }
+      $test = $this->_dbs[$id];
+      if( get_class($test) == $type )
+      {
+        return $test;
       }
       return false;
     }

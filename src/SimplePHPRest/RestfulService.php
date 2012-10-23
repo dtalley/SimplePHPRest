@@ -68,28 +68,11 @@
 
     public function init( $config ) {
       $this->_config = $config;
-      $total = func_num_args();
-      $allowed = array(
-	      "MySQLConnection",
-        "PGSQLConnection",
-        "Rediska",
-        "Sag"
-      );
-      for( $i = 1; $i < $total; $i++ ) {
-        if( 
-          is_object( func_get_arg( $i ) ) &&
-          in_array( 
-            get_class( func_get_arg( $i ) ), 
-            $allowed 
-          ) 
-        ) {
-          $this->_dbs[] = func_get_arg( $i );
-        }
-    		else
-    		{
-    		  die( "Database class '" . get_class( func_get_arg($i) ) . "' not allowed" );
-    		}
-      }
+    }
+
+    public function addDatabase( $id, $db )
+    {
+      $this->_dbs[$id] = $db;
     }
 
     public function respond( 
