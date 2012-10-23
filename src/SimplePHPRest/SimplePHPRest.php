@@ -12,9 +12,9 @@
       $this->_service = new RestfulService();
     }
 
-    public function init( $config, $db ) {
+    public function init( $config ) {
       $this->_config = $config;
-      $this->_service->init( $config, $db );
+      $this->_service->init( $config );
     }
 
     public function addDatabase( $id, $db )
