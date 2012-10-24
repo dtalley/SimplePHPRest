@@ -43,9 +43,11 @@
       if( $input !== NULL ) {
         $this->_inputSource = $input;
       } else if( $this->_method == "post" ) {
-        $this->_inputSource = $_POST;
+        $this->_inputSource = $_REQUEST;
+      } else if( $this->_method == "post" ) {
+        $this->_inputSource = $_REQUEST;
       } else if( $this->_method == "get" ) {
-        $this->_inputSource = $_GET;
+        $this->_inputSource = $_REQUEST;
       } else if( 
         $this->_method == "put" || 
         $this->_method == "delete" ||
