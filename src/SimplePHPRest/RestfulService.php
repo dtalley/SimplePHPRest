@@ -184,6 +184,8 @@
         $this->_code = 500;
       } else if( $code == 10002 ) {
         $this->_code = 404;
+      } else if( $code == 10003 ) {
+        $this->_code = 400;
       }
       if( $blocks )
       {
