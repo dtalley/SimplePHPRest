@@ -87,7 +87,7 @@
 	  $val = $this->input($key, $def);
 	  if ( $val === $def ) {
 	    $this->setCode($code);
-		$this->_service->error($err, $level, $msg);
+		  $this->_service->error($err, $level, $msg, true);
 	  }
 	  return $val;
 	}
