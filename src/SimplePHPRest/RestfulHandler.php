@@ -101,8 +101,9 @@
 
     protected function cookie( $id, $default ) {
       global $_COOKIE;
-      if( isset( $_COOKIE[$id] ) ) {
-        return $_COOKIE[$id];
+      $key = $this->_config->get( "cookies/prefix" ) . $id;
+      if( isset( $_COOKIE[$key] ) ) {
+        return $_COOKIE[$key];
       }
       return $default;
     }
