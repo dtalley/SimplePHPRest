@@ -167,8 +167,11 @@
     }
 
     public function error( 
-      $code, $level = 0, $message = "" 
+      $code, $level = 0, $message = "", $blocks = false
     ) {
+      if( $this->_handler->getCode() > $this->_code ) {
+        $this->_code = $this->_handler->getCode();
+      }
       $error = $this->_data->start( "errors", true );
       $error->store( "code", $code );
       $error->store( 
@@ -184,6 +187,11 @@
         $this->_code = 500;
       } else if( $code == 10002 ) {
         $this->_code = 404;
+      }
+      if( $blocks )
+      {
+        $this->dump();
+        exit;
       }
     }
 
