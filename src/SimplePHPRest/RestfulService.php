@@ -214,6 +214,7 @@
       $name = $this->_codes[$this->_code];
       header( "HTTP/1.1 " . $this->_code . " " . $name );
       header( "Content-type: application/json" );
+      header( "Access-Control-Allow-Credentials: true" );
       header( "Access-Control-Allow-Origin: " . $_SERVER['HTTP_REFERER'] );
       print $this->_data->save( "json" );
     }
