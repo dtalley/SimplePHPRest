@@ -28,7 +28,8 @@
       10002 => "Unsupported URI requested",
       10003 => "Client error",
       10004 => "System error",
-      10005 => "Required database not found"
+      10005 => "Required database not found",
+      10006 => "Unauthorized"
     );
 
     private $_codes = array(
