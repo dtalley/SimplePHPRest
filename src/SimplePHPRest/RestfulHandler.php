@@ -95,7 +95,7 @@
 	}
 
     protected function input( $id, $default ) {
-      if( isset( $this->_inputSource[$id] ) ) {
+      if( isset( $this->_inputSource[$id] ) && $this->_inputSource[$id] ) {
         return $this->_inputSource[$id];
       }
       return $default;
