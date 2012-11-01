@@ -10,6 +10,7 @@
     
     private $_config = NULL;
     private $_dbs = array();
+    private $_origins = array();
 
     private $_pseudo = false;
 
@@ -73,6 +74,11 @@
     public function addDatabase( $id, $db )
     {
       $this->_dbs[$id] = $db;
+    }
+
+    public function allowOrigin( $origin )
+    {
+      $this->_origins[] = $origin;
     }
 
     public function respond( 
@@ -206,6 +212,7 @@
       $name = $this->_codes[$this->_code];
       header( "HTTP/1.1 " . $this->_code . " " . $name );
       header( "Content-type: application/json" );
+      header( "Access-Control-Allow-Origin: *" );
       print $this->_data->save( "json" );
     }
 

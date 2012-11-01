@@ -22,6 +22,11 @@
       $this->_service->addDatabase( $id, $db );
     }
 
+    public function allowOrigin( $origin ) 
+    {
+      $this->_service->allowOrigin( $origin );
+    }
+
     public function register( $uri, $handler ) {
       $this->_service->register( $uri, $handler );
     }
