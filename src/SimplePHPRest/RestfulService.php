@@ -169,7 +169,7 @@
     public function error( 
       $code, $level = 0, $message = "", $blocks = false
     ) {
-      if( $this->_handler->getCode() > $this->_code ) {
+      if( $this->_handler && $this->_handler->getCode() > $this->_code ) {
         $this->_code = $this->_handler->getCode();
       }
       $error = $this->_data->start( "errors", true );
