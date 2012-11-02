@@ -218,8 +218,8 @@
       if( $referer )
       {
         $parsed = parse_url($referer);
-        header( "Access-Control-Allow-Credentials: true" );
-        header( "Access-Control-Allow-Origin: " . $parsed['host'] );
+        //header( "Access-Control-Allow-Credentials: true" );
+        //header( "Access-Control-Allow-Origin: " . $parsed['host'] );
       }
       print $this->_data->save( "json" );
     }
