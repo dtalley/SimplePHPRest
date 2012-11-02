@@ -215,7 +215,12 @@
       header( "HTTP/1.1 " . $this->_code . " " . $name );
       header( "Content-type: application/json" );
       header( "Access-Control-Allow-Credentials: true" );
-      header( "Access-Control-Allow-Origin: " . $_SERVER['HTTP_REFERER'] );
+      $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : "";
+      if( $referer )
+      {
+        $parsed = parse_url($referer);
+        header( "Access-Control-Allow-Origin: " . $parsed['host'] );
+      }
       print $this->_data->save( "json" );
     }
 
