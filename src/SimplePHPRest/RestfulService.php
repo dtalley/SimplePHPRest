@@ -111,7 +111,7 @@
         }
       }
       if ( ( $class = $tree-> get( "class" ) ) !== NULL ) {
-	    $this->_method = $method;
+	      $this->_method = $method;
         require_once REST_DIR . "/" . $class . ".php";
         $this->_handler = new $class();
         $this->_handler->process( 
@@ -142,7 +142,7 @@
             $this->_data->store( "response", $use_bank );
           }
         }
-        if( $this->_handler->getCode() > $this->_code ) {
+        if( $this->_handler->getCode() > $this->_code && !$this->_internal ) {
           $this->_code = $this->_handler->getCode();
         }
         if( $bank !== NULL ) {
@@ -151,7 +151,7 @@
       } else {
         $this->error( 10002 );
       }
-      return $this->_code;
+      return $this->_handler->getCode();
     }
 
     public function register( $base, $class ) {
@@ -174,7 +174,7 @@
     }
 
     public function error( 
-      $code, $level = 0, $message = "", $blocks = false
+      $code, $level = 0, $message = ""
     ) {
       if( $this->_handler && $this->_handler->getCode() > $this->_code ) {
         $this->_code = $this->_handler->getCode();
@@ -190,15 +190,13 @@
       if( $message ) {
         $error->store( "message", $message );
       }
-      if( $code == 10001 || $code == 10004 ) {
-        $this->_code = 500;
-      } else if( $code == 10002 ) {
-        $this->_code = 404;
-      }
-      if( $blocks )
+      if( !$this->_internal )
       {
-        $this->dump();
-        exit;
+        if( $code == 10001 || $code == 10004 ) {
+          $this->_code = 500;
+        } else if( $code == 10002 ) {
+          $this->_code = 404;
+        }
       }
     }
 
