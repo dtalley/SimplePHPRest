@@ -155,9 +155,6 @@
         if( $handler->getCode() > $this->_code && !$internal ) {
           $this->_code = $handler->getCode();
         }
-        if( $bank !== NULL ) {
-          return $bank;
-        }
       } else {
         $this->error( 10002 );
       }
