@@ -59,6 +59,8 @@
       503 => 'Service Unavailable'
     );
 
+    private $_handlers = array();
+
     public function __construct() {
       $this->_register = new DataTree();
       $this->_data = new DataTree();
@@ -113,8 +115,16 @@
       if ( ( $class = $tree-> get( "class" ) ) !== NULL ) {
 	      $this->_method = $method;
         require_once REST_DIR . "/" . $class . ".php";
-        $this->_handler = new $class();
-        $this->_handler->process( 
+        if( isset( $this->_handlers[$class] ) )
+        {
+          $handler = $this->_handlers[$class];
+        }
+        else
+        {
+          $handler = new $class();
+          $this->_handlers[$class] = $handler;
+        }
+        $handler->process( 
           $this, 
           $uri, 
           $method, 
@@ -129,7 +139,7 @@
         } else {
           $use_bank = new DataTree();
         }
-        $override = $this->_handler->respond( 
+        $override = $handler->respond( 
           $use_bank
         );
         if( 
@@ -142,8 +152,8 @@
             $this->_data->store( "response", $use_bank );
           }
         }
-        if( $this->_handler->getCode() > $this->_code && !$this->_internal ) {
-          $this->_code = $this->_handler->getCode();
+        if( $handler->getCode() > $this->_code && !$internal ) {
+          $this->_code = $handler->getCode();
         }
         if( $bank !== NULL ) {
           return $bank;
@@ -151,7 +161,7 @@
       } else {
         $this->error( 10002 );
       }
-      return $this->_handler->getCode();
+      return $handler->getCode();
     }
 
     public function register( $base, $class ) {
@@ -190,13 +200,18 @@
       if( $message ) {
         $error->store( "message", $message );
       }
-      if( !$this->_internal )
+      $fail = false;
+      if( $code == 10001 || $code == 10004 ) {
+        $this->_code = 500;
+        $fail = true;
+      } else if( $code == 10002 ) {
+        $this->_code = 404;
+        $fail = true;
+      }
+      if( $fail )
       {
-        if( $code == 10001 || $code == 10004 ) {
-          $this->_code = 500;
-        } else if( $code == 10002 ) {
-          $this->_code = 404;
-        }
+        $this->dump();
+        exit;
       }
     }
 
