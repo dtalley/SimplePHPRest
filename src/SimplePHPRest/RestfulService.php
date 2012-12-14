@@ -204,6 +204,9 @@
       } else if( $code == 10002 ) {
         $this->_code = 404;
         $fail = true;
+      } else if( $code == 10006 ) {
+        $this->_code = 401;
+        $fail = true;
       }
       if( $fail )
       {
